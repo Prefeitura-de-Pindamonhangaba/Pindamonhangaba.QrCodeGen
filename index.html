@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de QR Code</title>
+    <style>
+        body {
+            font-family: 'Helvetica', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            background-color: #c1dfe2ff;
+            padding-top: 40px;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+        h1 {
+            font-family: 'Helvetica', sans-serif;
+            margin-bottom: 25px;
+            color: #123d67ff;
+            font-size: 24px;
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #123d67ff;
+            font-size: 20px;
+        }
+        .input-section {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #123d67ff;
+            text-align: left;
+        }
+        input[type="url"] {
+            width: calc(100% - 22px);
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button, .download-button {
+            background-color: #009845ff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease, opacity 0.3s ease;
+            text-decoration: none; /* Remove sublinhado para links */
+            display: inline-block; /* Permite padding e margem como bloco */
+            margin: 5px; /* Espaço entre botões */
+        }
+        button:hover, .download-button:hover {
+            background-color: #008b3cff;
+        }
+         button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .output-section {
+            margin-top: 30px;
+        }
+
+        #qrcode {
+            margin: 20px auto;
+            padding: 15px;
+            border: 1px solid #eee;
+            background-color: #fff;
+            display: inline-block;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            margin-top: 20px;
+            font-style: italic;
+            color: #777;
+        }
+
+         #generateNewBtn {
+            background-color: #6c757d;
+        }
+
+        #generateNewBtn:hover {
+            background-color: #5a6268;
+        }
+
+         .button-group {
+            margin-top: 20px;
+         }
+
+    </style>
+</head>
+<body>
+    <div>
+      <img src="./assets/brasao.png" alt="Logo" style="width: 150px; height: auto; margin-bottom: 20px;">
+    </div>
+    <div class="container">
+        <h1>Gerador de QR Code</h1>
+
+        <div class="input-section" id="inputSection">
+            <label for="urlInput">Digite a URL:</label>
+            <input type="url" id="urlInput" placeholder="Ex: https://www.exemplo.com.br">
+            <button onclick="gerarQRCode()" id="generateBtn">Gerar QR Code</button>
+        </div>
+
+        <div class="loading hidden" id="loadingMessage">Gerando QR Code...</div>
+
+        <div class="output-section hidden" id="outputSection">
+            <h2>Seu QR Code:</h2>
+            <div id="qrcode"></div>
+            <div class="button-group">
+                <a href="#" id="downloadLink" class="download-button" download="qrcode.png">Baixar Imagem</a>
+                <button onclick="resetGenerator()" id="generateNewBtn">Gerar Novo QR Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+
+    <script>
+        const inputSection = document.getElementById('inputSection');
+        const outputSection = document.getElementById('outputSection');
+        const urlInput = document.getElementById('urlInput');
+        const qrcodeDiv = document.getElementById('qrcode');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadLink = document.getElementById('downloadLink'); // Referência ao link de download
+
+        let qrcodeInstance = null; // Variável para armazenar a instância do QR Code
+
+        function gerarQRCode() {
+            const url = urlInput.value.trim();
+
+            if (url) {
+                loadingMessage.classList.remove('hidden');
+                inputSection.classList.add('hidden');
+                generateBtn.disabled = true;
+
+                // Limpa o conteúdo anterior do QR Code
+                qrcodeDiv.innerHTML = '';
+                qrcodeInstance = null; // Reseta a instância anterior
+
+                setTimeout(() => {
+                     // Cria uma nova instância do QR Code
+                    qrcodeInstance = new QRCode(qrcodeDiv, {
+                        text: url,
+                        width: 250,
+                        height: 250,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+
+                    // Aguarda um pequeno momento para o canvas ser criado pela biblioteca
+                    // (Pode ser necessário um tempo se a geração for complexa,
+                    // mas para URL é geralmente instantâneo)
+                    setTimeout(() => {
+                        // Configura o link de download
+                        const qrcodeCanvas = qrcodeDiv.querySelector('canvas');
+                        if (qrcodeCanvas) {
+                            const imageUrl = qrcodeCanvas.toDataURL("image/png"); // Converte o canvas para Data URL (PNG)
+                            downloadLink.href = imageUrl;
+                            downloadLink.download = 'qrcode_' + Date.now() + '.png'; // Define o nome do arquivo com timestamp
+                        }
+
+
+                        loadingMessage.classList.add('hidden');
+                        outputSection.classList.remove('hidden');
+                    }, 50); // Pequeno delay adicional para garantir que o canvas esteja pronto
+
+                }, 100);
+            } else {
+                alert('Por favor, insira uma URL para gerar o QR Code.');
+                urlInput.focus();
+            }
+        }
+
+        function resetGenerator() {
+            urlInput.value = '';
+            qrcodeDiv.innerHTML = '';
+            qrcodeInstance = null; // Limpa a instância
+            downloadLink.href = '#'; // Reseta o link de download
+
+            outputSection.classList.add('hidden');
+            inputSection.classList.remove('hidden');
+
+            generateBtn.disabled = false;
+            urlInput.focus();
+        }
+
+        urlInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                gerarQRCode();
+            }
+        });
+
+    </script>
+</body>
+</html>
