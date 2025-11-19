@@ -191,12 +191,20 @@
                             // Carregar e desenhar o brasão SVG
                             const img = new Image();
                             img.onload = function() {
-                                const logoSize = 70;
-                                const x = (300 - logoSize) / 2;
-                                const y = (300 - logoSize) / 2;
+                                // Calcular proporção original da imagem
+                                const aspectRatio = img.width / img.height;
+                                
+                                // Definir altura máxima e calcular largura proporcional
+                                const maxLogoHeight = 70;
+                                const logoHeight = maxLogoHeight;
+                                const logoWidth = logoHeight * aspectRatio;
+                                
+                                // Centralizar a imagem
+                                const x = (300 - logoWidth) / 2;
+                                const y = (300 - logoHeight) / 2;
 
-                                // Desenhar brasão
-                                ctx.drawImage(img, x, y, logoSize, logoSize);
+                                // Desenhar brasão mantendo proporção
+                                ctx.drawImage(img, x, y, logoWidth, logoHeight);
 
                                 // Atualizar download
                                 const imageUrl = finalCanvas.toDataURL("image/png");
