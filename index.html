@@ -101,7 +101,7 @@
             border-radius: 16px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
             border: 8px solid #ffffff;
-            outline: 2px solid #e0e0e0;
+            outline: 3px solid #000000;
         }
         .hidden {
             display: none;
@@ -205,22 +205,35 @@
                     setTimeout(() => {
                         const qrcodeCanvas = qrcodeDiv.querySelector('canvas');
                         if (qrcodeCanvas) {
-                            // Criar canvas final com margem extra
-                            const margin = 30;
+                            // Criar canvas final com margens
+                            const innerMargin = 30;
+                            const borderWidth = 3;
+                            const outerMargin = 10;
                             const qrSize = 300;
-                            const finalSize = qrSize + (margin * 2);
+                            const finalSize = qrSize + (innerMargin * 2) + (borderWidth * 2) + (outerMargin * 2);
                             
                             const finalCanvas = document.createElement('canvas');
                             finalCanvas.width = finalSize;
                             finalCanvas.height = finalSize;
                             const ctx = finalCanvas.getContext('2d');
 
-                            // Preencher fundo branco
+                            // Preencher fundo branco (margem externa)
                             ctx.fillStyle = 'white';
                             ctx.fillRect(0, 0, finalSize, finalSize);
 
+                            // Preencher borda preta
+                            ctx.fillStyle = 'black';
+                            ctx.fillRect(outerMargin, outerMargin, finalSize - (outerMargin * 2), finalSize - (outerMargin * 2));
+
+                            // Preencher fundo branco interno
+                            ctx.fillStyle = 'white';
+                            ctx.fillRect(outerMargin + borderWidth, outerMargin + borderWidth, 
+                                        finalSize - (outerMargin * 2) - (borderWidth * 2), 
+                                        finalSize - (outerMargin * 2) - (borderWidth * 2));
+
                             // Desenhar QR Code com margem
-                            ctx.drawImage(qrcodeCanvas, margin, margin, qrSize, qrSize);
+                            ctx.drawImage(qrcodeCanvas, outerMargin + borderWidth + innerMargin, 
+                                         outerMargin + borderWidth + innerMargin, qrSize, qrSize);
 
                             // Desenhar círculo branco no centro
                             const centerX = finalSize / 2;
@@ -256,7 +269,7 @@
                                 downloadLinkPng.download = 'qrcode_' + Date.now() + '.png';
 
                                 // Gerar SVG
-                                gerarSVG(qrcodeCanvas, logoWidth, logoHeight);
+                                gerarSVG(qrcodeCanvas, logoWidth, logoHeight, borderWidth, outerMargin, innerMargin);
 
                                 // Substituir canvas
                                 qrcodeDiv.innerHTML = '';
@@ -273,7 +286,7 @@
                                 downloadLinkPng.href = imageUrl;
                                 downloadLinkPng.download = 'qrcode_' + Date.now() + '.png';
                                 
-                                gerarSVG(qrcodeCanvas, 0, 0);
+                                gerarSVG(qrcodeCanvas, 0, 0, borderWidth, outerMargin, innerMargin);
                                 
                                 qrcodeDiv.innerHTML = '';
                                 qrcodeDiv.appendChild(finalCanvas);
@@ -292,18 +305,23 @@
             }
         }
 
-        function gerarSVG(canvas, logoWidth, logoHeight) {
-            const margin = 30;
+        function gerarSVG(canvas, logoWidth, logoHeight, borderWidth, outerMargin, innerMargin) {
             const qrSize = 300;
-            const finalSize = qrSize + (margin * 2);
+            const finalSize = qrSize + (innerMargin * 2) + (borderWidth * 2) + (outerMargin * 2);
             const ctx = canvas.getContext('2d');
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             
             // Criar SVG do QR Code
             let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${finalSize}" height="${finalSize}" viewBox="0 0 ${finalSize} ${finalSize}">`;
             
-            // Fundo branco
+            // Fundo branco (margem externa)
             svgContent += `<rect width="${finalSize}" height="${finalSize}" fill="white"/>`;
+            
+            // Borda preta
+            svgContent += `<rect x="${outerMargin}" y="${outerMargin}" width="${finalSize - (outerMargin * 2)}" height="${finalSize - (outerMargin * 2)}" fill="black"/>`;
+            
+            // Fundo branco interno
+            svgContent += `<rect x="${outerMargin + borderWidth}" y="${outerMargin + borderWidth}" width="${finalSize - (outerMargin * 2) - (borderWidth * 2)}" height="${finalSize - (outerMargin * 2) - (borderWidth * 2)}" fill="white"/>`;
             
             // Criar uma matriz de pixels pretos
             const moduleSize = qrSize / canvas.width;
@@ -331,8 +349,8 @@
                         if (startX !== null) {
                             const width = x - startX;
                             paths.push({
-                                x: margin + startX * moduleSize,
-                                y: margin + y * moduleSize,
+                                x: outerMargin + borderWidth + innerMargin + startX * moduleSize,
+                                y: outerMargin + borderWidth + innerMargin + y * moduleSize,
                                 width: width * moduleSize,
                                 height: moduleSize
                             });
