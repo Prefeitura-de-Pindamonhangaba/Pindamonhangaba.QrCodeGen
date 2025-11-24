@@ -305,18 +305,49 @@
             // Fundo branco
             svgContent += `<rect width="${finalSize}" height="${finalSize}" fill="white"/>`;
             
-            // Desenhar pixels do QR Code
+            // Criar uma matriz de pixels pretos
             const moduleSize = qrSize / canvas.width;
+            const blackPixels = [];
+            
             for (let y = 0; y < canvas.height; y++) {
+                blackPixels[y] = [];
                 for (let x = 0; x < canvas.width; x++) {
                     const index = (y * canvas.width + x) * 4;
                     const r = imageData.data[index];
-                    
-                    if (r === 0) { // Pixel preto
-                        svgContent += `<rect x="${margin + x * moduleSize}" y="${margin + y * moduleSize}" width="${moduleSize}" height="${moduleSize}" fill="black"/>`;
+                    blackPixels[y][x] = (r === 0);
+                }
+            }
+            
+            // Agrupar retângulos horizontalmente
+            const paths = [];
+            for (let y = 0; y < canvas.height; y++) {
+                let startX = null;
+                for (let x = 0; x <= canvas.width; x++) {
+                    if (x < canvas.width && blackPixels[y][x]) {
+                        if (startX === null) {
+                            startX = x;
+                        }
+                    } else {
+                        if (startX !== null) {
+                            const width = x - startX;
+                            paths.push({
+                                x: margin + startX * moduleSize,
+                                y: margin + y * moduleSize,
+                                width: width * moduleSize,
+                                height: moduleSize
+                            });
+                            startX = null;
+                        }
                     }
                 }
             }
+            
+            // Adicionar retângulos agrupados
+            svgContent += '<g fill="black">';
+            for (const rect of paths) {
+                svgContent += `<rect x="${rect.x.toFixed(2)}" y="${rect.y.toFixed(2)}" width="${rect.width.toFixed(2)}" height="${rect.height.toFixed(2)}"/>`;
+            }
+            svgContent += '</g>';
             
             // Adicionar círculo branco no centro
             const centerX = finalSize / 2;
@@ -335,8 +366,10 @@
                 const svgElement = svgDoc.querySelector('svg');
                 
                 if (svgElement) {
+                    const viewBox = svgElement.viewBox.baseVal;
+                    const scale = logoWidth / viewBox.width;
                     const innerContent = svgElement.innerHTML;
-                    svgContent += `<g transform="translate(${x}, ${y}) scale(${logoWidth / svgElement.viewBox.baseVal.width})">`;
+                    svgContent += `<g transform="translate(${x.toFixed(2)}, ${y.toFixed(2)}) scale(${scale.toFixed(4)})">`;
                     svgContent += innerContent;
                     svgContent += `</g>`;
                 }
