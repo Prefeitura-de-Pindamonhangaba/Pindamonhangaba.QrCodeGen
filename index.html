@@ -82,11 +82,14 @@
         }
         #qrcode {
             margin: 20px auto;
-            padding: 15px;
-            border: 1px solid #eee;
-            background-color: #fff;
+            padding: 0;
             display: inline-block;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        #qrcode canvas {
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 8px solid #ffffff;
+            outline: 2px solid #e0e0e0;
         }
         .hidden {
             display: none;
@@ -169,18 +172,26 @@
                     setTimeout(() => {
                         const qrcodeCanvas = qrcodeDiv.querySelector('canvas');
                         if (qrcodeCanvas) {
-                            // Criar canvas final
+                            // Criar canvas final com margem extra
+                            const margin = 30;
+                            const qrSize = 300;
+                            const finalSize = qrSize + (margin * 2);
+                            
                             const finalCanvas = document.createElement('canvas');
-                            finalCanvas.width = 300;
-                            finalCanvas.height = 300;
+                            finalCanvas.width = finalSize;
+                            finalCanvas.height = finalSize;
                             const ctx = finalCanvas.getContext('2d');
 
-                            // Desenhar QR Code
-                            ctx.drawImage(qrcodeCanvas, 0, 0);
+                            // Preencher fundo branco
+                            ctx.fillStyle = 'white';
+                            ctx.fillRect(0, 0, finalSize, finalSize);
+
+                            // Desenhar QR Code com margem
+                            ctx.drawImage(qrcodeCanvas, margin, margin, qrSize, qrSize);
 
                             // Desenhar círculo branco no centro
-                            const centerX = 150;
-                            const centerY = 150;
+                            const centerX = finalSize / 2;
+                            const centerY = finalSize / 2;
                             const circleRadius = 45;
 
                             ctx.fillStyle = 'white';
@@ -200,8 +211,8 @@
                                 const logoWidth = logoHeight * aspectRatio;
                                 
                                 // Centralizar a imagem
-                                const x = (300 - logoWidth) / 2;
-                                const y = (300 - logoHeight) / 2;
+                                const x = (finalSize - logoWidth) / 2;
+                                const y = (finalSize - logoHeight) / 2;
 
                                 // Desenhar brasão mantendo proporção
                                 ctx.drawImage(img, x, y, logoWidth, logoHeight);
