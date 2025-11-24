@@ -119,6 +119,16 @@
         }
         .button-group {
             margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .download-button.secondary {
+            background-color: #123d67ff;
+        }
+        .download-button.secondary:hover {
+            background-color: #0d2d4d;
         }
     </style>
 </head>
@@ -141,7 +151,8 @@
             <h2>Seu QR Code:</h2>
             <div id="qrcode"></div>
             <div class="button-group">
-                <a href="#" id="downloadLink" class="download-button" download="qrcode.png">Baixar Imagem</a>
+                <a href="#" id="downloadLinkPng" class="download-button" download="qrcode.png">Baixar PNG</a>
+                <a href="#" id="downloadLinkSvg" class="download-button secondary" download="qrcode.svg">Baixar SVG</a>
                 <button onclick="resetGenerator()" id="generateNewBtn">Gerar Novo QR Code</button>
             </div>
         </div>
@@ -156,9 +167,19 @@
         const qrcodeDiv = document.getElementById('qrcode');
         const loadingMessage = document.getElementById('loadingMessage');
         const generateBtn = document.getElementById('generateBtn');
-        const downloadLink = document.getElementById('downloadLink');
+        const downloadLinkPng = document.getElementById('downloadLinkPng');
+        const downloadLinkSvg = document.getElementById('downloadLinkSvg');
 
         let qrcodeInstance = null;
+        let brasaoSvgContent = '';
+
+        // Carregar o SVG do brasão antecipadamente
+        fetch('./assets/brasao-preto.svg')
+            .then(response => response.text())
+            .then(svgText => {
+                brasaoSvgContent = svgText;
+            })
+            .catch(error => console.error('Erro ao carregar brasão SVG:', error));
 
         function gerarQRCode() {
             const url = urlInput.value.trim();
@@ -229,10 +250,13 @@
                                 // Desenhar brasão mantendo proporção
                                 ctx.drawImage(img, x, y, logoWidth, logoHeight);
 
-                                // Atualizar download
+                                // Atualizar download PNG
                                 const imageUrl = finalCanvas.toDataURL("image/png");
-                                downloadLink.href = imageUrl;
-                                downloadLink.download = 'qrcode_' + Date.now() + '.png';
+                                downloadLinkPng.href = imageUrl;
+                                downloadLinkPng.download = 'qrcode_' + Date.now() + '.png';
+
+                                // Gerar SVG
+                                gerarSVG(qrcodeCanvas, logoWidth, logoHeight);
 
                                 // Substituir canvas
                                 qrcodeDiv.innerHTML = '';
@@ -246,8 +270,10 @@
                                 console.error('Erro ao carregar o brasão');
                                 // Mostrar QR Code com círculo branco mesmo sem o brasão
                                 const imageUrl = finalCanvas.toDataURL("image/png");
-                                downloadLink.href = imageUrl;
-                                downloadLink.download = 'qrcode_' + Date.now() + '.png';
+                                downloadLinkPng.href = imageUrl;
+                                downloadLinkPng.download = 'qrcode_' + Date.now() + '.png';
+                                
+                                gerarSVG(qrcodeCanvas, 0, 0);
                                 
                                 qrcodeDiv.innerHTML = '';
                                 qrcodeDiv.appendChild(finalCanvas);
@@ -266,11 +292,71 @@
             }
         }
 
+        function gerarSVG(canvas, logoWidth, logoHeight) {
+            const margin = 30;
+            const qrSize = 300;
+            const finalSize = qrSize + (margin * 2);
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Criar SVG do QR Code
+            let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${finalSize}" height="${finalSize}" viewBox="0 0 ${finalSize} ${finalSize}">`;
+            
+            // Fundo branco
+            svgContent += `<rect width="${finalSize}" height="${finalSize}" fill="white"/>`;
+            
+            // Desenhar pixels do QR Code
+            const moduleSize = qrSize / canvas.width;
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const index = (y * canvas.width + x) * 4;
+                    const r = imageData.data[index];
+                    
+                    if (r === 0) { // Pixel preto
+                        svgContent += `<rect x="${margin + x * moduleSize}" y="${margin + y * moduleSize}" width="${moduleSize}" height="${moduleSize}" fill="black"/>`;
+                    }
+                }
+            }
+            
+            // Adicionar círculo branco no centro
+            const centerX = finalSize / 2;
+            const centerY = finalSize / 2;
+            const circleRadius = 45;
+            svgContent += `<circle cx="${centerX}" cy="${centerY}" r="${circleRadius}" fill="white"/>`;
+            
+            // Adicionar brasão SVG no centro
+            if (brasaoSvgContent && logoWidth > 0) {
+                const x = (finalSize - logoWidth) / 2;
+                const y = (finalSize - logoHeight) / 2;
+                
+                // Extrair apenas o conteúdo interno do SVG do brasão
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(brasaoSvgContent, 'image/svg+xml');
+                const svgElement = svgDoc.querySelector('svg');
+                
+                if (svgElement) {
+                    const innerContent = svgElement.innerHTML;
+                    svgContent += `<g transform="translate(${x}, ${y}) scale(${logoWidth / svgElement.viewBox.baseVal.width})">`;
+                    svgContent += innerContent;
+                    svgContent += `</g>`;
+                }
+            }
+            
+            svgContent += `</svg>`;
+            
+            // Criar blob e URL para download
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const svgUrl = URL.createObjectURL(blob);
+            downloadLinkSvg.href = svgUrl;
+            downloadLinkSvg.download = 'qrcode_' + Date.now() + '.svg';
+        }
+
         function resetGenerator() {
             urlInput.value = '';
             qrcodeDiv.innerHTML = '';
             qrcodeInstance = null;
-            downloadLink.href = '#';
+            downloadLinkPng.href = '#';
+            downloadLinkSvg.href = '#';
 
             outputSection.classList.add('hidden');
             inputSection.classList.remove('hidden');
